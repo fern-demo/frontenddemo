@@ -1,12 +1,10 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shuffle, Sparkles, Film, Tv, Gamepad2, RotateCcw, Heart, X, Info, Users, Swords } from "lucide-react"
+import { Shuffle, Sparkles, Film, Tv, Gamepad2 } from "lucide-react"
 import { DisneyOpensourceClient } from "disney-public-sdk"
 
 interface DisneyCharacter {
@@ -23,158 +21,44 @@ interface DisneyCharacter {
   sourceUrl?: string
 }
 
-interface CardState {
-  character: DisneyCharacter
-  id: string
-  isFlipped: boolean
-  zIndex: number
-  rotation: number
-  offsetX: number
-  offsetY: number
-}
-
 export default function DisneyCardDeck() {
-  const [cardStack, setCardStack] = useState<CardState[]>([])
+  const [character, setCharacter] = useState<DisneyCharacter | null>(null)
+  const [isShuffling, setIsShuffling] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [currentDrag, setCurrentDrag] = useState({ x: 0, y: 0 })
-  const cardRef = useRef<HTMLDivElement>(null)
 
   const client = new DisneyOpensourceClient()
 
-  // Pre-load multiple characters for smooth interactions
-  const loadCharacters = async (count = 5) => {
+  const shuffleAndDraw = async () => {
+    setIsShuffling(true)
     setIsLoading(true)
     setError(null)
 
     try {
+      // First get all characters to know the total count
       const allCharacters = await client.getAllCharacters()
 
       if (!allCharacters.data || allCharacters.data.length === 0) {
         throw new Error("No characters found")
       }
 
-      const newCards: CardState[] = []
-      for (let i = 0; i < count; i++) {
-        const randomIndex = Math.floor(Math.random() * allCharacters.data.length)
-        const character = allCharacters.data[randomIndex]
+      // Generate random index
+      const randomIndex = Math.floor(Math.random() * allCharacters.data.length)
+      const randomCharacter = allCharacters.data[randomIndex]
 
-        newCards.push({
-          character,
-          id: `card-${Date.now()}-${i}`,
-          isFlipped: false,
-          zIndex: count - i,
-          rotation: (Math.random() - 0.5) * 6, // Random rotation between -3 and 3 degrees
-          offsetX: (Math.random() - 0.5) * 8, // Random offset
-          offsetY: (Math.random() - 0.5) * 8,
-        })
-      }
-
-      setCardStack(newCards)
-      setIsLoading(false)
+      // Add shuffle delay for animation effect
+      setTimeout(() => {
+        setCharacter(randomCharacter)
+        setIsShuffling(false)
+        setIsLoading(false)
+      }, 1500)
     } catch (err) {
-      console.error("Error fetching characters:", err)
-      setError("Failed to fetch characters. Please try again.")
+      console.error("Error fetching character:", err)
+      setError("Failed to fetch character. Please try again.")
+      setIsShuffling(false)
       setIsLoading(false)
     }
   }
-
-  // Initialize with characters
-  useEffect(() => {
-    loadCharacters()
-  }, [])
-
-  const flipCard = (cardId: string) => {
-    setCardStack((prev) => prev.map((card) => (card.id === cardId ? { ...card, isFlipped: !card.isFlipped } : card)))
-  }
-
-  const swipeCard = (direction: "left" | "right") => {
-    if (cardStack.length === 0) return
-
-    const topCard = cardStack[cardStack.length - 1]
-
-    // Animate card out
-    setCardStack((prev) =>
-      prev.map((card) =>
-        card.id === topCard.id
-          ? {
-              ...card,
-              offsetX: direction === "left" ? -400 : 400,
-              rotation: direction === "left" ? -30 : 30,
-            }
-          : card,
-      ),
-    )
-
-    // Remove card after animation and add new one
-    setTimeout(() => {
-      setCardStack((prev) => {
-        const remaining = prev.filter((card) => card.id !== topCard.id)
-
-        // If we're running low on cards, load more
-        if (remaining.length <= 2) {
-          loadCharacters(3)
-          return remaining
-        }
-
-        return remaining
-      })
-    }, 300)
-  }
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (cardStack.length === 0) return
-    setIsDragging(true)
-    setDragStart({ x: e.clientX, y: e.clientY })
-    setCurrentDrag({ x: 0, y: 0 })
-  }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || cardStack.length === 0) return
-
-    const deltaX = e.clientX - dragStart.x
-    const deltaY = e.clientY - dragStart.y
-    setCurrentDrag({ x: deltaX, y: deltaY })
-  }
-
-  const handleMouseUp = () => {
-    if (!isDragging || cardStack.length === 0) return
-
-    setIsDragging(false)
-
-    // If dragged far enough, swipe the card
-    if (Math.abs(currentDrag.x) > 100) {
-      swipeCard(currentDrag.x > 0 ? "right" : "left")
-    }
-
-    setCurrentDrag({ x: 0, y: 0 })
-  }
-
-  // Touch events for mobile
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (cardStack.length === 0) return
-    const touch = e.touches[0]
-    setIsDragging(true)
-    setDragStart({ x: touch.clientX, y: touch.clientY })
-    setCurrentDrag({ x: 0, y: 0 })
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || cardStack.length === 0) return
-
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - dragStart.x
-    const deltaY = touch.clientY - dragStart.y
-    setCurrentDrag({ x: deltaX, y: deltaY })
-  }
-
-  const handleTouchEnd = () => {
-    handleMouseUp()
-  }
-
-  const topCard = cardStack[cardStack.length - 1]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
@@ -188,290 +72,198 @@ export default function DisneyCardDeck() {
           </h1>
           <p className="text-blue-200 text-lg">Powered by Fern-generated TypeScript SDK</p>
           <Badge variant="secondary" className="mt-2">
-            disney-public-sdk • Interactive Cards
+            disney-public-sdk
           </Badge>
         </div>
 
-        {/* Instructions */}
-        <div className="text-center mb-6">
-          <p className="text-blue-200 text-sm">💡 Click to flip • Drag to swipe • ❤️ Like • ✕ Pass</p>
-        </div>
-
-        {/* Card Stack Area */}
+        {/* Card Deck Area */}
         <div className="flex flex-col items-center gap-8">
-          {/* Card Stack */}
-          <div className="relative w-80 h-96 perspective-1000">
-            {cardStack.length === 0 && !isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Button
-                  onClick={() => loadCharacters()}
-                  size="lg"
-                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
-                >
-                  <Shuffle className="w-5 h-5 mr-2" />
-                  Draw Cards
-                </Button>
+          {/* Deck of Cards Visual */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl transform rotate-3 opacity-30"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-purple-500 rounded-xl transform rotate-1 opacity-40"></div>
+            <div
+              className={`relative w-64 h-96 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-2xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                isShuffling ? "animate-pulse scale-110" : ""
+              }`}
+              onClick={shuffleAndDraw}
+            >
+              <div className="absolute inset-4 border-2 border-white/30 rounded-lg flex flex-col items-center justify-center text-white">
+                <Shuffle className={`w-16 h-16 mb-4 ${isShuffling ? "animate-spin" : ""}`} />
+                <p className="text-xl font-bold text-center">{isShuffling ? "Shuffling..." : "Click to Draw"}</p>
+                <p className="text-sm opacity-75 text-center mt-2">Disney Character Card</p>
               </div>
-            )}
-
-            {cardStack.map((cardState, index) => {
-              const isTopCard = index === cardStack.length - 1
-              const dragTransform =
-                isTopCard && isDragging
-                  ? `translate(${currentDrag.x}px, ${currentDrag.y}px) rotate(${currentDrag.x * 0.1}deg)`
-                  : ""
-
-              return (
-                <div
-                  key={cardState.id}
-                  ref={isTopCard ? cardRef : null}
-                  className={`absolute inset-0 transition-all duration-300 cursor-pointer ${
-                    isTopCard ? "hover:scale-105" : ""
-                  }`}
-                  style={{
-                    zIndex: cardState.zIndex,
-                    transform: `
-                      translate(${cardState.offsetX + (isTopCard ? currentDrag.x : 0)}px, 
-                                ${cardState.offsetY + (isTopCard ? currentDrag.y : 0)}px) 
-                      rotate(${cardState.rotation + (isTopCard && isDragging ? currentDrag.x * 0.1 : 0)}deg)
-                      scale(${1 - (cardStack.length - 1 - index) * 0.05})
-                    `,
-                    transformStyle: "preserve-3d",
-                  }}
-                  onMouseDown={isTopCard ? handleMouseDown : undefined}
-                  onMouseMove={isTopCard ? handleMouseMove : undefined}
-                  onMouseUp={isTopCard ? handleMouseUp : undefined}
-                  onMouseLeave={isTopCard ? handleMouseUp : undefined}
-                  onTouchStart={isTopCard ? handleTouchStart : undefined}
-                  onTouchMove={isTopCard ? handleTouchMove : undefined}
-                  onTouchEnd={isTopCard ? handleTouchEnd : undefined}
-                  onClick={() => !isDragging && flipCard(cardState.id)}
-                >
-                  <div
-                    className={`relative w-full h-full transition-transform duration-700 transform-style-preserve-3d ${
-                      cardState.isFlipped ? "rotate-y-180" : ""
-                    }`}
-                  >
-                    {/* Front of Card */}
-                    <div className="absolute inset-0 w-full h-full backface-hidden">
-                      <Card className="w-full h-full bg-gradient-to-br from-white to-blue-50 shadow-2xl border-2 border-blue-200">
-                        <CardHeader className="text-center pb-4">
-                          <CardTitle className="text-2xl font-bold text-gray-800 mb-4">
-                            {cardState.character.name}
-                          </CardTitle>
-                          {cardState.character.imageUrl && (
-                            <div className="flex justify-center">
-                              <img
-                                src={cardState.character.imageUrl || "/placeholder.svg"}
-                                alt={cardState.character.name}
-                                className="w-32 h-32 object-cover rounded-full border-4 border-yellow-400 shadow-lg"
-                                onError={(e) => {
-                                  e.currentTarget.src = "/placeholder.svg?height=128&width=128"
-                                }}
-                              />
-                            </div>
-                          )}
-                        </CardHeader>
-
-                        <CardContent className="space-y-4">
-                          {/* Quick Stats */}
-                          <div className="grid grid-cols-2 gap-4 text-center">
-                            <div className="bg-blue-100 rounded-lg p-3">
-                              <Film className="w-6 h-6 mx-auto mb-1 text-blue-600" />
-                              <p className="text-sm font-semibold text-blue-800">
-                                {cardState.character.films?.length || 0} Films
-                              </p>
-                            </div>
-                            <div className="bg-green-100 rounded-lg p-3">
-                              <Tv className="w-6 h-6 mx-auto mb-1 text-green-600" />
-                              <p className="text-sm font-semibold text-green-800">
-                                {cardState.character.tvShows?.length || 0} TV Shows
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Featured Films */}
-                          {cardState.character.films && cardState.character.films.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold text-gray-700 mb-2">Featured In:</h4>
-                              <div className="flex flex-wrap gap-1">
-                                {cardState.character.films.slice(0, 3).map((film, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    {film}
-                                  </Badge>
-                                ))}
-                                {cardState.character.films.length > 3 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{cardState.character.films.length - 3}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="text-center pt-4">
-                            <p className="text-xs text-gray-500 flex items-center justify-center gap-1">
-                              <Info className="w-3 h-3" />
-                              Click to flip for details
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Back of Card */}
-                    <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180">
-                      <Card className="w-full h-full bg-gradient-to-br from-purple-50 to-pink-50 shadow-2xl border-2 border-purple-200">
-                        <CardHeader className="text-center pb-2">
-                          <CardTitle className="text-xl font-bold text-gray-800">{cardState.character.name}</CardTitle>
-                          <p className="text-sm text-gray-600">Character Details</p>
-                        </CardHeader>
-
-                        <CardContent className="space-y-3 text-sm">
-                          {/* Video Games */}
-                          {cardState.character.videoGames && cardState.character.videoGames.length > 0 && (
-                            <div>
-                              <h4 className="flex items-center gap-1 font-semibold text-purple-700 mb-1">
-                                <Gamepad2 className="w-4 h-4" />
-                                Games ({cardState.character.videoGames.length})
-                              </h4>
-                              <div className="flex flex-wrap gap-1">
-                                {cardState.character.videoGames.slice(0, 2).map((game, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs bg-purple-100">
-                                    {game}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Park Attractions */}
-                          {cardState.character.parkAttractions && cardState.character.parkAttractions.length > 0 && (
-                            <div>
-                              <h4 className="flex items-center gap-1 font-semibold text-yellow-700 mb-1">
-                                <Sparkles className="w-4 h-4" />
-                                Attractions ({cardState.character.parkAttractions.length})
-                              </h4>
-                              <div className="space-y-1">
-                                {cardState.character.parkAttractions.slice(0, 2).map((attraction, idx) => (
-                                  <p key={idx} className="text-xs text-gray-600">
-                                    • {attraction}
-                                  </p>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Allies */}
-                          {cardState.character.allies && cardState.character.allies.length > 0 && (
-                            <div>
-                              <h4 className="flex items-center gap-1 font-semibold text-green-700 mb-1">
-                                <Users className="w-4 h-4" />
-                                Allies ({cardState.character.allies.length})
-                              </h4>
-                              <div className="space-y-1">
-                                {cardState.character.allies.slice(0, 2).map((ally, idx) => (
-                                  <p key={idx} className="text-xs text-gray-600">
-                                    • {ally}
-                                  </p>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Enemies */}
-                          {cardState.character.enemies && cardState.character.enemies.length > 0 && (
-                            <div>
-                              <h4 className="flex items-center gap-1 font-semibold text-red-700 mb-1">
-                                <Swords className="w-4 h-4" />
-                                Enemies ({cardState.character.enemies.length})
-                              </h4>
-                              <div className="space-y-1">
-                                {cardState.character.enemies.slice(0, 2).map((enemy, idx) => (
-                                  <p key={idx} className="text-xs text-gray-600">
-                                    • {enemy}
-                                  </p>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="text-center pt-2">
-                            <p className="text-xs text-gray-500 flex items-center justify-center gap-1">
-                              <RotateCcw className="w-3 h-3" />
-                              Click to flip back
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Loading State */}
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-80 h-96 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-2xl animate-pulse">
-                  <div className="absolute inset-4 border-2 border-white/30 rounded-lg flex flex-col items-center justify-center text-white">
-                    <Shuffle className="w-16 h-16 mb-4 animate-spin" />
-                    <p className="text-xl font-bold">Loading Cards...</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
 
-          {/* Action Buttons */}
-          {topCard && !isLoading && (
-            <div className="flex gap-4">
-              <Button
-                onClick={() => swipeCard("left")}
-                size="lg"
-                variant="outline"
-                className="bg-red-50 border-red-200 hover:bg-red-100 text-red-700"
-              >
-                <X className="w-5 h-5 mr-2" />
-                Pass
-              </Button>
-
-              <Button
-                onClick={() => flipCard(topCard.id)}
-                size="lg"
-                variant="outline"
-                className="bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700"
-              >
-                <RotateCcw className="w-5 h-5 mr-2" />
-                Flip
-              </Button>
-
-              <Button
-                onClick={() => swipeCard("right")}
-                size="lg"
-                variant="outline"
-                className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700"
-              >
-                <Heart className="w-5 h-5 mr-2" />
-                Like
-              </Button>
-            </div>
-          )}
-
-          {/* Card Counter */}
-          {cardStack.length > 0 && (
-            <div className="text-center">
-              <Badge variant="secondary" className="text-sm">
-                {cardStack.length} cards remaining
-              </Badge>
-            </div>
-          )}
+          {/* Shuffle Button */}
+          <Button
+            onClick={shuffleAndDraw}
+            disabled={isLoading}
+            size="lg"
+            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold px-8 py-3 text-lg"
+          >
+            <Shuffle className="w-5 h-5 mr-2" />
+            {isLoading ? "Drawing..." : "Shuffle & Draw"}
+          </Button>
 
           {/* Error Display */}
           {error && (
             <Card className="w-full max-w-md bg-red-50 border-red-200">
               <CardContent className="p-4">
                 <p className="text-red-600 text-center">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Character Card */}
+          {character && !isShuffling && (
+            <Card className="w-full max-w-2xl bg-white/95 backdrop-blur-sm shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-3xl font-bold text-gray-800 mb-2">{character.name}</CardTitle>
+                {character.imageUrl && (
+                  <div className="flex justify-center">
+                    <img
+                      src={character.imageUrl || "/placeholder.svg"}
+                      alt={character.name}
+                      className="w-48 h-48 object-cover rounded-full border-4 border-yellow-400 shadow-lg"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none"
+                      }}
+                    />
+                  </div>
+                )}
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                {/* Films */}
+                {character.films && character.films.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-700 mb-2">
+                      <Film className="w-5 h-5 text-blue-600" />
+                      Films
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {character.films.slice(0, 5).map((film, index) => (
+                        <Badge key={index} variant="secondary" className="bg-blue-100 text-blue-800">
+                          {film}
+                        </Badge>
+                      ))}
+                      {character.films.length > 5 && (
+                        <Badge variant="outline">+{character.films.length - 5} more</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* TV Shows */}
+                {character.tvShows && character.tvShows.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-700 mb-2">
+                      <Tv className="w-5 h-5 text-green-600" />
+                      TV Shows
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {character.tvShows.slice(0, 5).map((show, index) => (
+                        <Badge key={index} variant="secondary" className="bg-green-100 text-green-800">
+                          {show}
+                        </Badge>
+                      ))}
+                      {character.tvShows.length > 5 && (
+                        <Badge variant="outline">+{character.tvShows.length - 5} more</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Video Games */}
+                {character.videoGames && character.videoGames.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-700 mb-2">
+                      <Gamepad2 className="w-5 h-5 text-purple-600" />
+                      Video Games
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {character.videoGames.slice(0, 5).map((game, index) => (
+                        <Badge key={index} variant="secondary" className="bg-purple-100 text-purple-800">
+                          {game}
+                        </Badge>
+                      ))}
+                      {character.videoGames.length > 5 && (
+                        <Badge variant="outline">+{character.videoGames.length - 5} more</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Park Attractions */}
+                {character.parkAttractions && character.parkAttractions.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-700 mb-2">
+                      <Sparkles className="w-5 h-5 text-yellow-600" />
+                      Park Attractions
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {character.parkAttractions.slice(0, 3).map((attraction, index) => (
+                        <Badge key={index} variant="secondary" className="bg-yellow-100 text-yellow-800">
+                          {attraction}
+                        </Badge>
+                      ))}
+                      {character.parkAttractions.length > 3 && (
+                        <Badge variant="outline">+{character.parkAttractions.length - 3} more</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Allies & Enemies */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {character.allies && character.allies.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-700 mb-2">Allies</h3>
+                      <div className="space-y-1">
+                        {character.allies.slice(0, 3).map((ally, index) => (
+                          <p key={index} className="text-sm text-gray-600">
+                            • {ally}
+                          </p>
+                        ))}
+                        {character.allies.length > 3 && (
+                          <p className="text-sm text-gray-500">+{character.allies.length - 3} more</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {character.enemies && character.enemies.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-red-700 mb-2">Enemies</h3>
+                      <div className="space-y-1">
+                        {character.enemies.slice(0, 3).map((enemy, index) => (
+                          <p key={index} className="text-sm text-gray-600">
+                            • {enemy}
+                          </p>
+                        ))}
+                        {character.enemies.length > 3 && (
+                          <p className="text-sm text-gray-500">+{character.enemies.length - 3} more</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Source Link */}
+                {character.sourceUrl && (
+                  <div className="pt-4 border-t">
+                    <a
+                      href={character.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 text-sm underline"
+                    >
+                      Learn more about {character.name} →
+                    </a>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
