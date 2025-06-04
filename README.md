@@ -1,7 +1,3 @@
-# Disney Character Deck
-
-A simple and magical Disney character card deck webapp that demonstrates the power and simplicity of Fern-generated TypeScript SDKs. Click the deck to shuffle and draw random Disney characters with rich information including films, TV shows, video games, and more!
-
 ## 🎯 Purpose
 
 This project serves as a **demo showcase** for how easy it is to integrate and use a Fern-generated TypeScript SDK in a modern React application. It highlights the developer experience benefits of Fern's SDK generation:
