@@ -1,4 +1,6 @@
-## 🎯 Purpose
+[Front End Demo](https://v0-fern-disney-webapp.vercel.app/)
+
+## 🎯 Purpose 
 
 This project serves as a **demo showcase** for how easy it is to integrate and use a Fern-generated TypeScript SDK in a modern React application. It highlights the developer experience benefits of Fern's SDK generation:
 
@@ -113,10 +115,6 @@ This project showcases several key advantages of Fern-generated SDKs:
 
 ## 📚 Learn More
 
-- [Fern Documentation](https://docs.buildwithfern.com/)
-- [Disney API Documentation](https://disneyapi.dev/docs/)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Tailwind CSS](https://tailwindcss.com/docs)
-
+- [Fern Documentation](https://buildwithfern.com/learn)
 
 **Built with ❤️ to showcase the power of Fern-generated TypeScript SDKs**
