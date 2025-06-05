@@ -15,9 +15,9 @@ This project serves as a **demo showcase** for how easy it is to integrate and u
 
 The Fern-generated SDK is installed as a standard npm package:
 
-\`\`\`bash
+```bash
 npm install disney-public-sdk
-\`\`\`
+```
 
 ### Usage in the Application
 
@@ -25,19 +25,19 @@ The SDK integration is remarkably simple and can be found in \`app/page.tsx\`:
 
 #### 1. Import the Client
 
-\`\`\`typescript
+```typescript
 import { DisneyOpensourceClient } from "disney-public-sdk"
-\`\`\`
+```
 
 #### 2. Initialize the Client
 
-\`\`\`typescript
+```typescript
 const client = new DisneyOpensourceClient()
-\`\`\`
+```
 
 #### 3. Make API Calls
 
-\`\`\`typescript
+```typescript
 const shuffleAndDraw = async () => {
   try {
     // Fetch all characters from the Disney API
@@ -53,7 +53,7 @@ const shuffleAndDraw = async () => {
     setError("Failed to fetch character. Please try again.")
   }
 }
-\`\`\`
+```
 
 ### Key SDK Benefits Demonstrated
 
@@ -67,7 +67,7 @@ const shuffleAndDraw = async () => {
 
 The SDK returns well-typed character objects with the following structure:
 
-\`\`\`typescript
+```typescript
 interface DisneyCharacter {
   _id: number
   name: string
@@ -81,7 +81,7 @@ interface DisneyCharacter {
   enemies?: string[]
   sourceUrl?: string
 }
-\`\`\`
+```
 
 ## 🔍 SDK Integration Points
 
