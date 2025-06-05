@@ -89,10 +89,9 @@ The Fern SDK is used in the following locations:
 
 ### Primary Integration: \`app/page.tsx\`
 
-- **Line 7**: SDK import statement
-- **Line 25**: Client initialization  
-- **Line 27-45**: Main API call in \`shuffleAndDraw\` function
-- **Line 32**: \`client.getAllCharacters()\` method call
+- [**Line 8**: SDK import statement](https://github.com/fern-demo/frontenddemo/blob/122190226cf68c820d387940f791a8072e930ceb/app/page.tsx#L8)
+- [**Line 30**: Client initialization](https://github.com/fern-demo/frontenddemo/blob/122190226cf68c820d387940f791a8072e930ceb/app/page.tsx#L30)  
+- [**Line 39**: \`client.getAllCharacters()\` method call](https://github.com/fern-demo/frontenddemo/blob/122190226cf68c820d387940f791a8072e930ceb/app/page.tsx#L39)
 
 ### Key Features Demonstrated
 
